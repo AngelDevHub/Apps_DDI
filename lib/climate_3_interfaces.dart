@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 
-void main() {
-  runApp(const ClimateApp());
-}
-
-class ClimateApp extends StatelessWidget {
-  const ClimateApp({Key? key}) : super(key: key);
+class ClimateAppInterfaces extends StatelessWidget {
+  const ClimateAppInterfaces({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Climate App',
+      title: 'Climate App - Interfaces',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
