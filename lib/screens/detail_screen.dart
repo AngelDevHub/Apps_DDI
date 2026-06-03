@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/temperature_card.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/weather_icon.dart';
+import '../providers/weather_provider.dart';
 
 class DetailScreen extends StatelessWidget {
   const DetailScreen({Key? key}) : super(key: key);
@@ -16,9 +18,12 @@ class DetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ACCEDER AL PROVIDER PARA EL NOMBRE DE LA CIUDAD
+    final weather = Provider.of<WeatherProvider>(context).weather;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Santiago - 5 Días'),
+        title: Text('${weather.city} - 5 Días'),
         elevation: 0,
       ),
       body: SafeArea(

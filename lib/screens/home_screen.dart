@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/weather_icon.dart';
 import '../widgets/custom_button.dart';
+import '../providers/weather_provider.dart';
+import '../utils/weather_utils.dart';
 import 'search_screen.dart';
 
+/// Pantalla Principal (Dashboard)
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -15,28 +19,37 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      body: OrientationBuilder(
-        builder: (context, orientation) {
-          return SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: orientation == Orientation.portrait
-                  ? _buildPortrait(context)
-                  : _buildLandscape(context),
-            ),
+      // Consumer permite que el widget se redibuje automáticamente 
+      // cada vez que el WeatherProvider llama a notifyListeners()
+      body: Consumer<WeatherProvider>(
+        builder: (context, weatherProvider, child) {
+          final weather = weatherProvider.weather;
+          
+          return OrientationBuilder(
+            builder: (context, orientation) {
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                  child: orientation == Orientation.portrait
+                      ? _buildPortrait(context, weather)
+                      : _buildLandscape(context, weather),
+                ),
+              );
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildPortrait(BuildContext context) {
+  /// Diseño optimizado para orientación vertical
+  Widget _buildPortrait(BuildContext context, dynamic weather) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const SizedBox(height: 40),
-        _buildHeader(context),
+        _buildHeader(context, weather),
         const SizedBox(height: 60),
         _buildWeatherInfo(context),
         const SizedBox(height: 60),
@@ -45,12 +58,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLandscape(BuildContext context) {
+  /// Diseño optimizado para orientación horizontal (lado a lado)
+  Widget _buildLandscape(BuildContext context, dynamic weather) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          child: _buildHeader(context),
+          child: _buildHeader(context, weather),
         ),
         Expanded(
           child: Column(
@@ -66,11 +80,12 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  /// Encabezado con Ciudad e Icono dinámico basado en el estado
+  Widget _buildHeader(BuildContext context, dynamic weather) {
     return Column(
       children: [
         Text(
-          'Santiago de Querétaro',
+          weather.city,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
@@ -78,12 +93,13 @@ class HomeScreen extends StatelessWidget {
               ),
         ),
         const SizedBox(height: 16),
-        const WeatherIcon(condition: 'sunny', size: 120),
+        WeatherIcon(condition: weather.condition, size: 120),
         const SizedBox(height: 16),
         Text(
-          '24°C',
+          // Uso de función pura para formatear la temperatura
+          formatTemperature(weather.temp, weather.unit),
           style: TextStyle(
-            fontSize: 96,
+            fontSize: 80,
             fontWeight: FontWeight.w900,
             color: Theme.of(context).colorScheme.primary,
             letterSpacing: -2,
@@ -93,6 +109,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// Información secundaria (Humedad/Viento)
   Widget _buildWeatherInfo(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -135,15 +152,43 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// Sección de botones de acción e interacción con el Provider
   Widget _buildAction(BuildContext context) {
-    return CustomButton(
-      text: 'Buscar Ciudades',
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SearchScreen()),
-        );
-      },
+    return Column(
+      children: [
+        // Llama a toggleUnit para cambiar unidades globalmente
+        CustomButton(
+          text: 'Cambiar Unidad',
+          color: Colors.orange,
+          onPressed: () {
+            Provider.of<WeatherProvider>(context, listen: false).toggleUnit();
+          },
+        ),
+        const SizedBox(height: 16),
+        // Función de prueba para simular cambios de estado
+        CustomButton(
+          text: 'Simular Clima Aleatorio',
+          color: Colors.blueGrey,
+          onPressed: () {
+            final provider = Provider.of<WeatherProvider>(context, listen: false);
+            provider.updateWeather(
+              provider.weather.city,
+              (15 + (DateTime.now().second % 20)).toDouble(),
+              provider.weather.condition,
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        CustomButton(
+          text: 'Buscar Ciudades',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SearchScreen()),
+            );
+          },
+        ),
+      ],
     );
   }
 }

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/custom_button.dart';
+import '../providers/weather_provider.dart';
 import 'detail_screen.dart';
 
+/// Pantalla de Búsqueda de Ciudades.
+/// Utiliza un StatefulWidget para gestionar el estado local del filtrado de la lista.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({Key? key}) : super(key: key);
 
@@ -10,41 +14,49 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final List<Map<String, String>> _allCities = const [
-    {'name': 'Santiago', 'temp': '24°C', 'cond': 'sunny'},
-    {'name': 'Querétaro', 'temp': '22°C', 'cond': 'cloudy'},
-    {'name': 'México', 'temp': '20°C', 'cond': 'rainy'},
-    {'name': 'Monterrey', 'temp': '30°C', 'cond': 'sunny'},
-    {'name': 'Guadalajara', 'temp': '26°C', 'cond': 'cloudy'},
+  // Lista estática de ciudades para simular una base de datos o API.
+  final List<Map<String, dynamic>> _allCities = const [
+    {'name': 'Santiago', 'temp': 24.0, 'cond': 'sunny'},
+    {'name': 'Querétaro', 'temp': 22.0, 'cond': 'cloudy'},
+    {'name': 'México', 'temp': 20.0, 'cond': 'rainy'},
+    {'name': 'Monterrey', 'temp': 30.0, 'cond': 'sunny'},
+    {'name': 'Guadalajara', 'temp': 26.0, 'cond': 'cloudy'},
   ];
 
-  late List<Map<String, String>> _filteredCities;
+  // Lista que se actualiza dinámicamente según la búsqueda del usuario.
+  late List<Map<String, dynamic>> _filteredCities;
+  
+  // Controlador para el campo de texto de búsqueda.
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    // Inicialmente, la lista filtrada muestra todas las ciudades.
     _filteredCities = _allCities;
   }
 
   @override
   void dispose() {
+    // Es buena práctica liberar el controlador cuando el widget se destruye.
     _searchController.dispose();
     super.dispose();
   }
 
-  // Lógica de filtrado
+  /// Filtra la lista de ciudades basándose en el texto ingresado.
   void _runFilter(String enteredKeyword) {
-    List<Map<String, String>> results = [];
+    List<Map<String, dynamic>> results = [];
     if (enteredKeyword.isEmpty) {
       results = _allCities;
     } else {
+      // Filtrado insensible a mayúsculas/minúsculas.
       results = _allCities
           .where((city) =>
               city['name']!.toLowerCase().contains(enteredKeyword.toLowerCase()))
           .toList();
     }
 
+    // Actualiza el estado local para reflejar los cambios en la UI.
     setState(() {
       _filteredCities = results;
     });
@@ -62,12 +74,14 @@ class _SearchScreenState extends State<SearchScreen> {
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
+              // Campo de entrada de búsqueda
               TextField(
                 controller: _searchController,
                 onChanged: (value) => _runFilter(value),
                 decoration: InputDecoration(
                   hintText: 'Buscar ciudad...',
                   prefixIcon: const Icon(Icons.search_rounded),
+                  // Botón para limpiar el buscador si hay texto
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear),
@@ -87,6 +101,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
               const SizedBox(height: 32),
+              
+              // Lista de resultados
               Expanded(
                 child: _filteredCities.isNotEmpty
                     ? ListView.separated(
@@ -94,8 +110,19 @@ class _SearchScreenState extends State<SearchScreen> {
                         itemCount: _filteredCities.length,
                         separatorBuilder: (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
+                          final city = _filteredCities[index];
                           return InkWell(
                             onTap: () {
+                              // INTEGRACIÓN CON PROVIDER:
+                              // Al seleccionar una ciudad, actualizamos el estado global 
+                              // de la aplicación para que todas las pantallas reflejen el cambio.
+                              Provider.of<WeatherProvider>(context, listen: false).updateWeather(
+                                city['name'],
+                                city['temp'],
+                                city['cond'],
+                              );
+                              
+                              // Navegación a la pantalla de detalle.
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => const DetailScreen()),
@@ -123,7 +150,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   ),
                                   const SizedBox(width: 16),
                                   Text(
-                                    _filteredCities[index]['name']!,
+                                    city['name']!,
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -131,7 +158,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   ),
                                   const Spacer(),
                                   Text(
-                                    _filteredCities[index]['temp']!,
+                                    '${city['temp']}°C',
                                     style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w900,
@@ -146,7 +173,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           );
                         },
                       )
-                    : Column(
+                    : // Estado cuando no hay resultados
+                      Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.search_off_rounded, size: 80, color: Colors.grey[400]),
@@ -159,6 +187,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
               ),
               const SizedBox(height: 24),
+              // Botón de navegación hacia atrás
               CustomButton(
                 text: 'Atrás',
                 onPressed: () => Navigator.pop(context),
