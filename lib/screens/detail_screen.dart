@@ -19,7 +19,12 @@ class DetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ACCEDER AL PROVIDER PARA EL NOMBRE DE LA CIUDAD
-    final weather = Provider.of<WeatherProvider>(context).weather;
+    final weatherProvider = Provider.of<WeatherProvider>(context);
+    final weather = weatherProvider.weather;
+
+    if (weather == null) {
+      return const Scaffold(body: Center(child: Text('No hay datos seleccionados')));
+    }
 
     return Scaffold(
       appBar: AppBar(

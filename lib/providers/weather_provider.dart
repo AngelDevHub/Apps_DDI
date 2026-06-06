@@ -1,63 +1,74 @@
 import 'package:flutter/material.dart';
-import '../models/weather.dart';
+import '../models/weather_model.dart';
 
-/// Gestor de estado para la información del clima.
-/// Utiliza ChangeNotifier para notificar a la UI cuando los datos cambian.
-class WeatherProvider with ChangeNotifier {
-  // Estado inicial de la aplicación
-  Weather _weather = Weather(
-    city: 'Santiago de Querétaro',
-    temp: 24.0,
-    condition: 'sunny',
-    unit: '°C',
-  );
+class WeatherProvider extends ChangeNotifier {
+  Weather? _weather;
+  bool _isLoading = false;
+  String? _errorMessage;
+  int _tempUnit = 0; // 0 = Celsius, 1 = Fahrenheit
 
-  /// Getter para obtener el estado actual del clima.
-  Weather get weather => _weather;
+  // Getters
+  Weather? get weather => _weather;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  String get temperatureUnit => _tempUnit == 0 ? '°C' : '°F';
 
-  /// Actualiza los datos del clima con validaciones de seguridad.
-  /// Previene el almacenamiento de datos malformados o fuera de rango.
-  void updateWeather(String newCity, double newTemp, String newCondition) {
-    // CRITERIO DE SEGURIDAD: Validar datos antes de almacenar
-    
-    // 1. Validar nombre de ciudad (No vacío ni nulo)
-    if (newCity.trim().isEmpty) {
-      debugPrint('SEGURIDAD: El nombre de la ciudad no puede estar vacío.');
-      return; 
+  Future<void> loadWeather(String city) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Simula delay de red de 1 segundo
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Datos hardcodeados iniciales
+      _weather = Weather(
+        city: city,
+        temperature: 24,
+        condition: 'sunny',
+        humidity: 65,
+      );
+    } catch (e) {
+      _errorMessage = 'Error loading weather: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
+  }
 
-    // 2. Validar rango de temperatura (-60°C a 60°C) para evitar datos erróneos
-    if (newTemp < -60 || newTemp > 60) {
-      debugPrint('SEGURIDAD: Temperatura $newTemp°C fuera de rango permitido (-60 a 60).');
-      return;
-    }
-
-    // Si las validaciones pasan, actualizamos el estado
-    _weather = Weather(
-      city: newCity.trim(),
-      temp: newTemp,
-      condition: newCondition,
-      unit: _weather.unit,
-    );
-
-    // Notificar a todos los widgets que están escuchando (Consumer/Provider.of)
+  /// Cambiar unidad de temperatura (°C <-> °F)
+  void toggleTemperatureUnit() {
+    _tempUnit = _tempUnit == 0 ? 1 : 0;
     notifyListeners();
   }
 
-  /// Cambia la unidad de medida (°C <-> °F) y realiza la conversión matemática.
-  void toggleUnit() {
-    String newUnit = _weather.unit == '°C' ? '°F' : '°C';
-    double newTemp = newUnit == '°F' 
-        ? (_weather.temp * 9/5) + 32 
-        : (_weather.temp - 32) * 5/9;
-        
+  /// Actualizar temperatura manualmente (con validación de seguridad)
+  void updateTemperature(int newTemp) {
+    if (_weather != null) {
+      // Validación: Solo actualizar si el rango es seguro
+      if (newTemp >= -50 && newTemp <= 60) {
+        _weather = Weather(
+          city: _weather!.city,
+          temperature: newTemp,
+          condition: _weather!.condition,
+          humidity: _weather!.humidity,
+        );
+        notifyListeners();
+      } else {
+        debugPrint('Seguridad: Temperatura fuera de rango permitido.');
+      }
+    }
+  }
+
+  /// Método para actualizar el clima completo (útil para la SearchScreen)
+  void updateWeather(String city, int temp, String condition) {
     _weather = Weather(
-      city: _weather.city,
-      temp: double.parse(newTemp.toStringAsFixed(1)),
-      condition: _weather.condition,
-      unit: newUnit,
+      city: city,
+      temperature: temp,
+      condition: condition,
+      humidity: 60, // Valor por defecto para la simulación
     );
-    
     notifyListeners();
   }
 }
