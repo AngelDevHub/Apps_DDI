@@ -4,6 +4,7 @@ import '../widgets/weather_icon.dart';
 import '../widgets/custom_button.dart';
 import '../providers/weather_provider.dart';
 import 'search_screen.dart';
+import 'ble_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -16,9 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Carga inicial requerida por el profesor
     Future.microtask(() =>
-      Provider.of<WeatherProvider>(context, listen: false).loadWeather('Santiago de Querétaro')
+      Provider.of<WeatherProvider>(context, listen: false).loadWeather()
     );
   }
 
@@ -37,8 +37,15 @@ class _HomeScreenState extends State<HomeScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // Mostrar mensaje de error o desconexión BLE
           if (provider.errorMessage != null) {
-            return Center(child: Text('Error: ${provider.errorMessage}'));
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (provider.errorMessage == "Sin conexión BLE") {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('⚠️ Sin conexión BLE')),
+                );
+              }
+            });
           }
 
           final weather = provider.weather;
@@ -51,7 +58,14 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                const SizedBox(height: 20),
+                // Indicador de conexión BLE
+                if (provider.isBleConnected)
+                  const Chip(
+                    label: Text('Wearable Conectado'),
+                    avatar: Icon(Icons.bluetooth_connected, size: 16),
+                    backgroundColor: Colors.greenAccent,
+                  ),
+                const SizedBox(height: 10),
                 Text(
                   weather.city,
                   textAlign: TextAlign.center,
@@ -60,10 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                 ),
                 const SizedBox(height: 24),
-                
-                // RECUPERADO: Tu icono animado/diseñado anterior
                 WeatherIcon(condition: weather.condition, size: 120),
-                
                 const SizedBox(height: 24),
                 Text(
                   '${weather.temperature}${provider.temperatureUnit}',
@@ -73,17 +84,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     letterSpacing: -2,
                   ),
                 ),
-                
                 const SizedBox(height: 40),
                 _buildWeatherInfo(context, weather),
-                
-                const SizedBox(height: 60),
+                const SizedBox(height: 40),
+                CustomButton(
+                  text: 'Vincular Wearable (BLE)',
+                  color: Colors.blueAccent,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BLEScanScreen()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
                 CustomButton(
                   text: 'Cambiar Unidad',
                   color: Colors.orange,
                   onPressed: () => provider.toggleTemperatureUnit(),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 CustomButton(
                   text: 'Buscar Ciudades',
                   onPressed: () {

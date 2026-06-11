@@ -1,31 +1,97 @@
 import 'package:flutter/material.dart';
 import '../models/weather_model.dart';
+import '../services/ble_service.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 class WeatherProvider extends ChangeNotifier {
   Weather? _weather;
   bool _isLoading = false;
   String? _errorMessage;
-  int _tempUnit = 0; // 0 = Celsius, 1 = Fahrenheit
+  int _tempUnit = 0;
+
+  BluetoothDevice? _connectedDevice;
+  bool _isBleConnected = false;
 
   // Getters
   Weather? get weather => _weather;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String get temperatureUnit => _tempUnit == 0 ? '°C' : '°F';
+  bool get isBleConnected => _isBleConnected;
+  BluetoothDevice? get connectedDevice => _connectedDevice;
 
-  Future<void> loadWeather(String city) async {
+  final BLEService _bleService = BLEService();
+
+  int _reconnectAttempts = 0;
+  final int _maxReconnectAttempts = 3;
+
+  Future<void> connectAndReadWearable(BluetoothDevice device) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Simula delay de red de 1 segundo
+      await _establishConnection(device);
+    } catch (e) {
+      _errorMessage = 'Error BLE: $e';
+      _isBleConnected = false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _establishConnection(BluetoothDevice device) async {
+    _connectedDevice = await _bleService.connect(device.remoteId.str);
+    _isBleConnected = true;
+    _reconnectAttempts = 0; 
+    notifyListeners();
+
+    _connectedDevice!.connectionState.listen((state) async {
+      if (state == BluetoothConnectionState.disconnected) {
+        _isBleConnected = false;
+        if (_reconnectAttempts < _maxReconnectAttempts) {
+          _reconnectAttempts++;
+          debugPrint('Intentando reconexión $_reconnectAttempts...');
+          _establishConnection(device); // Intento de reconexión
+        } else {
+          _errorMessage = "Sin conexión BLE - Reintentos fallidos";
+          notifyListeners();
+        }
+      }
+    });
+
+    await _readData();
+  }
+
+  Future<void> _readData() async {
+    if (_connectedDevice == null) return;
+    
+    final data = await _bleService.readCharacteristic(
+      _connectedDevice!, 
+      "0000180d-0000-1000-8000-00805f9b34fb",
+      "00002a37-0000-1000-8000-00805f9b34fb"
+    );
+
+    if (data.isNotEmpty) {
+      updateTemperature(data[0]);
+    }
+  }
+
+  Future<void> loadWeather() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
       await Future.delayed(const Duration(seconds: 1));
 
-      // Datos hardcodeados iniciales
+      const String nombreCiudad = 'Mexico';
+      const int temperaturaManual = 30;
+
       _weather = Weather(
-        city: city,
-        temperature: 24,
+        city: nombreCiudad,
+        temperature: temperaturaManual,
         condition: 'sunny',
         humidity: 65,
       );
@@ -37,16 +103,13 @@ class WeatherProvider extends ChangeNotifier {
     }
   }
 
-  /// Cambiar unidad de temperatura (°C <-> °F)
   void toggleTemperatureUnit() {
     _tempUnit = _tempUnit == 0 ? 1 : 0;
     notifyListeners();
   }
 
-  /// Actualizar temperatura manualmente (con validación de seguridad)
   void updateTemperature(int newTemp) {
     if (_weather != null) {
-      // Validación: Solo actualizar si el rango es seguro
       if (newTemp >= -50 && newTemp <= 60) {
         _weather = Weather(
           city: _weather!.city,
@@ -55,19 +118,16 @@ class WeatherProvider extends ChangeNotifier {
           humidity: _weather!.humidity,
         );
         notifyListeners();
-      } else {
-        debugPrint('Seguridad: Temperatura fuera de rango permitido.');
       }
     }
   }
 
-  /// Método para actualizar el clima completo (útil para la SearchScreen)
   void updateWeather(String city, int temp, String condition) {
     _weather = Weather(
       city: city,
       temperature: temp,
       condition: condition,
-      humidity: 60, // Valor por defecto para la simulación
+      humidity: 60,
     );
     notifyListeners();
   }

@@ -3,11 +3,8 @@ import 'package:provider/provider.dart';
 import 'providers/weather_provider.dart';
 import 'screens/home_screen.dart';
 
-/// Punto de entrada para la Práctica 2.3
 void main() {
   runApp(
-    // MultiProvider inicializa los gestores de estado en la cima del árbol de widgets.
-    // Esto permite que cualquier pantalla acceda a la información del clima.
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
