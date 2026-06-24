@@ -1,51 +1,60 @@
 /// Modelo que representa los datos climáticos.
-/// Implementado según los requerimientos de la P2.3 del profesor.
+/// Actualizado para la Práctica 2.5 (API Real).
 class Weather {
   final String city;
   final int temperature;
   final String condition;
+  final String description;
   final int humidity;
+  final double windSpeed;
 
   Weather({
     required this.city,
     required this.temperature,
     required this.condition,
+    required this.description,
     required this.humidity,
+    required this.windSpeed,
   });
 
-  /// Convertir JSON a Weather (Crucial para futuras APIs en P2.5)
+  /// Factory para deserialización segura de la respuesta de OpenWeatherMap
   factory Weather.fromJson(Map<String, dynamic> json) {
-    // Validación de seguridad: Verificar que el campo 'main' exista
-    if (!json.containsKey('main')) {
-      throw const FormatException('Missing main field in weather data');
+    // Validar campos obligatorios antes de parsear
+    if (!json.containsKey('main') || !json.containsKey('weather')) {
+      throw const FormatException('Respuesta API incompleta');
     }
     
+    if ((json['weather'] as List).isEmpty) {
+      throw const FormatException('Sin datos de clima');
+    }
+
     final temp = json['main']['temp'];
     // Validación de tipo: Asegurar que la temperatura sea un número
     if (temp is! num) {
-      throw const FormatException('Temperature must be a number');
+      throw const FormatException('Temperatura inválida');
     }
 
     return Weather(
-      city: json['name'] ?? 'Unknown',
+      city: json['name'] ?? 'Desconocido',
       temperature: temp.toInt(),
-      condition: (json['weather'] as List?)?.isNotEmpty == true
-          ? json['weather'][0]['main'] ?? 'unknown'
-          : 'unknown',
-      humidity: json['main']['humidity'] ?? 0,
+      condition: json['weather'][0]['main'] ?? 'Desconocido',
+      description: json['weather'][0]['description'] ?? '',
+      humidity: (json['main']['humidity'] ?? 0) as int,
+      windSpeed: ((json['wind']?['speed']) ?? 0).toDouble(),
     );
   }
 
-  /// Convertir Weather a JSON para persistencia o envío de datos
+  /// Convertir Weather a JSON (útil para persistencia local)
   Map<String, dynamic> toJson() => {
     'city': city,
     'temperature': temperature,
     'condition': condition,
+    'description': description,
     'humidity': humidity,
+    'windSpeed': windSpeed,
   };
 
   @override
-  String toString() {
-    return 'Weather(city: $city, temp: $temperature°C, condition: $condition, humidity: $humidity%)';
-  }
+  String toString() =>
+      'Weather($city: ${temperature}C, $condition, $humidity%, ${windSpeed}m/s)';
 }
