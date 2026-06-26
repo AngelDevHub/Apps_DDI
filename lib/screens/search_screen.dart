@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/custom_button.dart';
 import '../providers/weather_provider.dart';
-
+/*
 class SearchScreen extends StatefulWidget {
   const SearchScreen({Key? key}) : super(key: key);
 
@@ -146,3 +146,4 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 }
+*/

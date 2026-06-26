@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
-
+/*
 class ClimateAppInterfaces extends StatelessWidget {
   const ClimateAppInterfaces({Key? key}) : super(key: key);
 
@@ -20,3 +20,4 @@ class ClimateAppInterfaces extends StatelessWidget {
     );
   }
 }
+*/

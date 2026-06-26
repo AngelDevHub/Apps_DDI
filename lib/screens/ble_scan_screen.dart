@@ -62,8 +62,10 @@ class _BLEScanScreenState extends State<BLEScanScreen> {
                         trailing: Text('${r.rssi} dBm'),
                         onTap: () async {
                           // Detener escaneo al seleccionar
-                          _bleService.stopScan();
-                          setState(() { _isScanning = false; });
+                          await _bleService.stopScan();
+                          if (mounted) {
+                            setState(() { _isScanning = false; });
+                          }
                           
                           // Intentar conectar y leer
                           await weatherProvider.connectAndReadWearable(r.device);

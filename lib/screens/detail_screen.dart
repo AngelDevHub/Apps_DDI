@@ -4,7 +4,7 @@ import '../widgets/temperature_card.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/weather_icon.dart';
 import '../providers/weather_provider.dart';
-
+/*
 class DetailScreen extends StatelessWidget {
   const DetailScreen({Key? key}) : super(key: key);
 
@@ -101,3 +101,4 @@ class DetailScreen extends StatelessWidget {
     );
   }
 }
+*/

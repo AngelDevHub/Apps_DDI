@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/weather_provider.dart';
 import 'widgets/weather_icon.dart';
 
-void main() {
+/*void main() {
   runApp(
     MultiProvider(
       providers: [
@@ -133,4 +133,4 @@ class _WearHomeScreenState extends State<WearHomeScreen> {
       ),
     );
   }
-}
+}*/
